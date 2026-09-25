@@ -68,8 +68,12 @@ const primary = {
   set(text, handler, { enabled = true, visible = true } = {}) {
     this.handler = enabled ? handler : null;
     if (inTelegram) {
+      if (!visible) { // Telegram throws on an empty button text, so hiding must not pass one
+        tg.MainButton.hide();
+        return;
+      }
       tg.MainButton.setParams({
-        text, color: "#D8B45A", text_color: "#0E0B1F", is_active: enabled, is_visible: visible,
+        text, color: "#D8B45A", text_color: "#0E0B1F", is_active: enabled, is_visible: true,
       });
       return;
     }
