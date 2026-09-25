@@ -11,20 +11,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap&subset=cyrillic" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <main class="app" id="app" data-stage="setup">
     <header class="top">
       <h1>Стол гадалки</h1>
       <p class="hint" id="hint" aria-live="polite">Выбери расклад и задай вопрос</p>
+      <button class="sound" id="sound" type="button" aria-pressed="true" aria-label="Звук">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/>
+          <path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path class="mute" d="M16 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
     </header>
 
     <section class="table" id="table" aria-label="Стол">
+      <div class="aura" aria-hidden="true"></div>
       <div class="candle" aria-hidden="true"></div>
+      <canvas class="motes" id="motes" aria-hidden="true"></canvas>
+      <svg class="lines" id="lines" aria-hidden="true"></svg>
       <div class="deck" id="deck" aria-hidden="true"></div>
       <div class="slots" id="slots"></div>
-      <div class="fan" id="fan" role="group" aria-label="Колода веером"></div>
+      <div class="fan" id="fan" role="group" aria-label="Колода веером: веди пальцем и отпусти на своей карте"></div>
     </section>
 
     <p class="note" id="note" hidden></p>
@@ -54,6 +64,8 @@
     </div>
   </main>
 
+  <canvas class="sparks" id="sparks" aria-hidden="true"></canvas>
+
   <div class="zoom" id="zoom" hidden>
     <div class="zoom-card" id="zoom-card"></div>
     <div class="zoom-text">
@@ -64,6 +76,6 @@
     <button class="zoom-close" id="zoom-close" type="button">Вернуться к столу</button>
   </div>
 
-  <script src="app.js?v=3" type="module"></script>
+  <script src="app.js?v=4" type="module"></script>
 </body>
 </html>
