@@ -15,9 +15,7 @@
   --moon: #E8E4F5;
   --muted: #968CBE;
   --accent: #9B7BFF;            /* persona colour, set from app.js; animates thanks to @property */
-  --tilt-x: 0deg;               /* phone tilt, set from app.js while cards are open */
-  --tilt-y: 0deg;
-  --foil: 50%;
+  --foil: 50%;                  /* foil sheen position, set per card from the phone tilt */
   --serif: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
   --gutter: 16px;
   --vh: var(--tg-viewport-stable-height, 100dvh);
@@ -78,7 +76,7 @@ button, textarea { font: inherit; color: inherit; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shimmer 7s linear infinite;
+  animation: shimmer 2.8s ease-in-out 1.2s 1 both;
 }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
 .hint {
@@ -184,10 +182,7 @@ button, textarea { font: inherit; color: inherit; }
   transition: transform .9s cubic-bezier(.3, 1.35, .45, 1);
 }
 .card.open .card-inner { transform: rotateY(180deg); }
-.card.open.settled .card-inner {
-  transform: rotateY(calc(180deg + var(--tilt-y))) rotateX(var(--tilt-x));
-  transition: transform .18s linear;
-}
+.card.open.settled .card-inner { transition: none; } /* app.js writes the (smoothed) tilt here each frame */
 .face {
   position: absolute; inset: 0;
   border-radius: 7% / 4.1%;
@@ -223,8 +218,7 @@ button, textarea { font: inherit; color: inherit; }
     rgba(255, 255, 255, .45) 48%, rgba(79, 179, 169, .28) 56%, transparent 70%);
   background-size: 260% 260%;
   background-position: var(--foil) 50%;
-  mix-blend-mode: color-dodge;
-  opacity: .55;
+  opacity: .35;
   pointer-events: none;
 }
 /* one bright glint across the face while it turns over */
@@ -239,15 +233,11 @@ button, textarea { font: inherit; color: inherit; }
 
 .card.major .face.front {
   box-shadow: 0 0 0 2px var(--gold-light), 0 0 30px rgba(242, 217, 138, .75), 0 0 60px color-mix(in srgb, var(--accent) 50%, transparent);
-  animation: major-glow 2.6s ease-in-out infinite alternate 1s;
-}
-@keyframes major-glow {
-  to { box-shadow: 0 0 0 2px var(--gold-light), 0 0 18px rgba(242, 217, 138, .5), 0 0 40px color-mix(in srgb, var(--accent) 35%, transparent); }
 }
 
 /* setup: a squared deck in the middle of the table */
 .deck { position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 3; transition: opacity .5s; }
-.deck .card { --w: 88px; left: -44px; top: -75px; transition: none; }
+.deck .card { --w: 88px; left: -44px; top: -75px; transition: none; will-change: transform; }
 .app[data-stage="pick"] .deck, .app[data-stage="reveal"] .deck, .app[data-stage="sending"] .deck { opacity: 0; pointer-events: none; }
 
 /* the fan along the bottom edge of the table: slide a finger along it, release on your card */
@@ -259,6 +249,7 @@ button, textarea { font: inherit; color: inherit; }
   top: 34px;
   transform-origin: 50% 340%;
   cursor: pointer;
+  will-change: transform;
 }
 .fan .card.hover { z-index: 5; filter: drop-shadow(0 0 10px rgba(242, 217, 138, .8)); }
 .fan .card:focus-visible { outline: none; }
@@ -279,7 +270,7 @@ button, textarea { font: inherit; color: inherit; }
   box-shadow: 0 0 18px rgba(242, 217, 138, .3), inset 0 0 18px rgba(242, 217, 138, .12);
   animation: beckon 1.6s ease-in-out infinite;
 }
-@keyframes beckon { 50% { box-shadow: 0 0 6px rgba(242, 217, 138, .15), inset 0 0 8px rgba(242, 217, 138, .05); } }
+@keyframes beckon { 50% { opacity: .45; } }
 .slot.cross { transform: rotate(90deg); }
 .slot.filled { opacity: 0; }
 .slot-label {
@@ -427,8 +418,6 @@ textarea:focus { box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 22px -6px rgba(2
 .zoom-card {
   position: relative;
   width: min(62vw, 260px); aspect-ratio: 350 / 600;
-  transform: perspective(900px) rotateY(var(--tilt-y)) rotateX(var(--tilt-x));
-  transition: transform .18s linear;
   animation: zoom-in .5s var(--ease-out);
 }
 @keyframes zoom-in { from { transform: perspective(900px) scale(.7) rotateY(-25deg); opacity: 0; } }
@@ -440,7 +429,7 @@ textarea:focus { box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 22px -6px rgba(2
   content: ""; position: absolute; inset: 0; border-radius: 12px;
   background: linear-gradient(115deg, transparent 20%, rgba(155, 123, 255, .3) 34%, rgba(255, 255, 255, .45) 48%, rgba(79, 179, 169, .3) 58%, transparent 72%);
   background-size: 260% 260%; background-position: var(--foil) 50%;
-  mix-blend-mode: color-dodge; opacity: .5; pointer-events: none;
+  opacity: .35; pointer-events: none;
 }
 .zoom-card.reversed img { transform: rotate(180deg); }
 .zoom-text { text-align: center; max-width: 34ch; }
@@ -457,7 +446,7 @@ textarea:focus { box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 22px -6px rgba(2
 
 /* Everything that answers a tap stays; the ambient motion (sky, candle, sheen, aura) goes. */
 @media (prefers-reduced-motion: reduce) {
-  .top h1, .aura, .app.lit .candle, .card.major .face.front, .slot.next { animation: none; }
+  .top h1, .aura, .app.lit .candle, .slot.next { animation: none; }
 }
 
 @media (min-width: 560px) {

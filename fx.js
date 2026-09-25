@@ -5,11 +5,40 @@ const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
 
-function fit(canvas) {
+// Canvas size is tracked by a ResizeObserver: asking for it every frame would force style and layout work.
+function sized(canvas) {
+  const box = { width: 1, height: 1 };
+  const apply = (w, h) => {
+    box.width = Math.max(1, w);
+    box.height = Math.max(1, h);
+    canvas.width = Math.round(box.width * DPR);
+    canvas.height = Math.round(box.height * DPR);
+  };
   const r = canvas.getBoundingClientRect();
-  const w = Math.max(1, Math.round(r.width * DPR)), h = Math.max(1, Math.round(r.height * DPR));
-  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-  return r;
+  apply(r.width, r.height);
+  new ResizeObserver(([e]) => apply(e.contentRect.width, e.contentRect.height)).observe(canvas);
+  return box;
+}
+
+// A glowing dot is drawn once per colour into a small sprite and then stamped with drawImage:
+// building a gradient for every particle in every frame is what made the effects stutter on phones.
+const sprites = new Map();
+function glow([r, g, b]) {
+  const key = `${r},${g},${b}`;
+  let s = sprites.get(key);
+  if (!s) {
+    s = document.createElement("canvas");
+    s.width = s.height = 64;
+    const c = s.getContext("2d");
+    const grad = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(0.3, `rgba(${r},${g},${b},.5)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    c.fillStyle = grad;
+    c.fillRect(0, 0, 64, 64);
+    sprites.set(key, s);
+  }
+  return s;
 }
 
 export function hexToRgb(hex) {
@@ -20,8 +49,9 @@ export function hexToRgb(hex) {
 // ---------- motes: dust in the candle light, drifting up ----------
 
 export class Motes {
-  constructor(canvas, count = 38) {
+  constructor(canvas, count = 34) {
     this.canvas = canvas;
+    this.box = sized(canvas);
     this.ctx = canvas.getContext("2d");
     this.count = count;
     this.items = [];
@@ -56,7 +86,7 @@ export class Motes {
     if (!this.running) return;
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
-    const r = fit(this.canvas);
+    const r = this.box;
     if (this.items.length !== this.count) this.seed(r);
     const c = this.ctx;
     c.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -71,15 +101,11 @@ export class Motes {
       // brighter near the candle at the top centre, dimmer towards the edges
       const light = 1 - Math.min(1, Math.hypot(x - r.width / 2, m.y - r.height * 0.1) / (r.height * 0.95));
       const a = (0.18 + 0.55 * light) * (0.6 + 0.4 * Math.sin(m.tw));
-      const [cr, cg, cb] = m.gold ? [242, 217, 138] : this.accent;
-      const g = c.createRadialGradient(x, m.y, 0, x, m.y, m.r * 4);
-      g.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`);
-      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-      c.fillStyle = g;
-      c.beginPath();
-      c.arc(x, m.y, m.r * 4, 0, TAU);
-      c.fill();
+      const s = m.r * 4;
+      c.globalAlpha = Math.max(0, a);
+      c.drawImage(glow(m.gold ? [242, 217, 138] : this.accent), x - s, m.y - s, s * 2, s * 2);
     }
+    c.globalAlpha = 1;
     requestAnimationFrame(this.tick);
   }
 }
@@ -89,6 +115,7 @@ export class Motes {
 export class Sparks {
   constructor(canvas) {
     this.canvas = canvas;
+    this.box = sized(canvas);
     this.ctx = canvas.getContext("2d");
     this.parts = [];
     this.rings = [];
@@ -130,9 +157,9 @@ export class Sparks {
   }
 
   // particles fly from each point to the target: the reading "gathers" before it goes to the chat
-  gather(points, target, color = [242, 217, 138]) {
+  gather(points, target, color = [242, 217, 138], perPoint = 44) {
     for (const p of points) {
-      for (let i = 0; i < 44; i++) {
+      for (let i = 0; i < perPoint; i++) {
         this.parts.push({
           x: p.x + rand(-p.w / 2, p.w / 2), y: p.y + rand(-p.h / 2, p.h / 2), life: rand(1.05, 1.25), age: 0,
           size: rand(1.6, 3.4), color: Math.random() < 0.35 ? [255, 246, 214] : color,
@@ -146,7 +173,7 @@ export class Sparks {
   tick(now) {
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
-    const r = fit(this.canvas);
+    const r = this.box;
     const c = this.ctx;
     c.setTransform(DPR, 0, 0, DPR, 0, 0);
     c.clearRect(0, 0, r.width, r.height);
@@ -168,17 +195,11 @@ export class Sparks {
       const u = p.age / p.life;
       // gathering sparks grow brighter as they converge and wink out on arrival; the rest simply fade
       const a = p.homing ? Math.min(1, 0.45 + u) * (u > 0.9 ? (1 - u) / 0.1 : 1) : 1 - u;
-      const [cr, cg, cb] = p.color;
-      const s = p.size * (0.6 + 0.6 * a);
-      const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, s * 3.2);
-      g.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`);
-      g.addColorStop(0.35, `rgba(${cr},${cg},${cb},${a * 0.5})`);
-      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-      c.fillStyle = g;
-      c.beginPath();
-      c.arc(p.x, p.y, s * 3.2, 0, TAU);
-      c.fill();
+      const s = p.size * (0.6 + 0.6 * a) * 3.2;
+      c.globalAlpha = Math.max(0, a);
+      c.drawImage(glow(p.color), p.x - s, p.y - s, s * 2, s * 2);
     }
+    c.globalAlpha = 1;
 
     this.rings = this.rings.filter((q) => (q.age += dt) < q.life);
     for (const q of this.rings) {

@@ -2,8 +2,8 @@
 // The user shuffles, pulls cards from a fan and turns them over; the pulled cards go back to the bot
 // with Telegram.WebApp.sendData, and the bot writes the interpretation in the chat (bot/handlers/table.py).
 // sendData works only when the page is opened from the bot's keyboard button «Стол гадалки».
-import { Motes, Sparks, hexToRgb } from "./fx.js?v=4";
-import { isOn, setOn, sound, unlock } from "./sound.js?v=4";
+import { Motes, Sparks, hexToRgb } from "./fx.js?v=5";
+import { isOn, setOn, sound, unlock } from "./sound.js?v=5";
 
 const tg = window.Telegram?.WebApp;
 const inTelegram = Boolean(tg && tg.platform && tg.platform !== "unknown");
@@ -582,12 +582,32 @@ function drawConstellation(animate = true) {
 
 // ---------- phone tilt: open cards and the close-up follow it ----------
 
-let tiltAlive = false, tiltStarted = false, base = null;
+let tiltAlive = false, tiltStarted = false, base = null, tiltNext = null, tiltNow = [0, 0];
 
+// Once a frame, the tilt is written straight onto each open card (and the close-up): a variable on a
+// container or on :root would restyle every element below it on each phone movement.
 function applyTilt(tx, ty) {
-  root.style.setProperty("--tilt-x", `${tx.toFixed(2)}deg`);
-  root.style.setProperty("--tilt-y", `${ty.toFixed(2)}deg`);
-  root.style.setProperty("--foil", `${(50 + ty * 3.2).toFixed(1)}%`);
+  if (!tiltNext) requestAnimationFrame(() => {
+    // ease towards the target instead of a CSS transition, which would restart on every sensor reading
+    tiltNow = [tiltNow[0] + (tiltNext[0] - tiltNow[0]) * 0.45, tiltNow[1] + (tiltNext[1] - tiltNow[1]) * 0.45];
+    const [x, y] = tiltNow;
+    tiltNext = null;
+    const turn = `rotateY(${(180 + y).toFixed(2)}deg) rotateX(${x.toFixed(2)}deg)`;
+    const foil = `${(50 + y * 3.2).toFixed(1)}%`;
+    for (const p of picked) {
+      if (!p.el.classList.contains("settled")) continue;
+      p.inner ??= p.el.querySelector(".card-inner");
+      p.front ??= p.el.querySelector(".front");
+      p.inner.style.transform = turn;
+      p.front.style.setProperty("--foil", foil);
+    }
+    const z = $("zoom-card");
+    if (!$("zoom").hidden) {
+      z.style.transform = `perspective(900px) rotateY(${y.toFixed(2)}deg) rotateX(${x.toFixed(2)}deg)`;
+      z.style.setProperty("--foil", foil);
+    }
+  });
+  tiltNext = [tx, ty];
 }
 
 function startTilt() {
@@ -618,7 +638,6 @@ function stopTilt() {
   tiltStarted = false;
   tiltAlive = false;
   base = null;
-  applyTilt(0, 0);
 }
 
 // ---------- the positions on the table ----------
@@ -751,7 +770,7 @@ async function finish() {
   const target = { x: t.left + t.width / 2, y: t.top + Math.min(90, t.height * 0.2) };
   const cards = picked.map((p) => centre(p.el));
   cards.forEach((c) => sparks.ring(c.x, c.y, { radius: Math.max(c.w, c.h) * 0.75, life: 0.6 }));
-  sparks.gather(cards, target, accentRgb());
+  sparks.gather(cards, target, accentRgb(), Math.min(44, Math.ceil(220 / cards.length)));
   sound.rise();
   haptic.done();
   await wait(1150);
@@ -809,7 +828,7 @@ function intro() {
 async function main() {
   setupTelegram();
   try {
-    const res = await fetch("data.json?v=4");
+    const res = await fetch("data.json?v=5");
     data = await res.json();
   } catch (e) {
     note.textContent = "Не удалось загрузить колоду. Проверь интернет и открой стол заново.";
