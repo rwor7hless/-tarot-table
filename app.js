@@ -2,8 +2,8 @@
 // The user shuffles, pulls cards from a fan and turns them over; the pulled cards go back to the bot
 // with Telegram.WebApp.sendData, and the bot writes the interpretation in the chat (bot/handlers/table.py).
 // sendData works only when the page is opened from the bot's keyboard button «Стол гадалки».
-import { Motes, Sparks, hexToRgb } from "./fx.js?v=5";
-import { isOn, setOn, sound, unlock } from "./sound.js?v=5";
+import { Motes, Sparks, hexToRgb } from "./fx.js?v=6";
+import { isOn, setOn, sound, unlock } from "./sound.js?v=6";
 
 const tg = window.Telegram?.WebApp;
 const inTelegram = Boolean(tg && tg.platform && tg.platform !== "unknown");
@@ -35,6 +35,8 @@ const root = document.documentElement;
 const app = $("app"), table = $("table"), deckEl = $("deck"), slotsEl = $("slots"), fanEl = $("fan");
 const hint = $("hint"), note = $("note"), drawnEl = $("drawn"), bar = $("bar"), primaryBtn = $("primary");
 const linesEl = $("lines"), soundBtn = $("sound");
+// the bot passes the chosen card back and the level; backs.css knows how every back looks
+app.dataset.back = /^[a-z]{2,12}$/.test(params.get("back") || "") ? params.get("back") : "classic";
 
 let data;               // data.json: cards, spreads, personas
 let cardsById;
@@ -825,10 +827,19 @@ function intro() {
   if (!calm) motes.start();
 }
 
+function showLevel() {
+  const lvl = Number.parseInt(params.get("lvl") || "", 10);
+  if (lvl >= 1 && lvl <= 10) {
+    $("lvl").textContent = `ур. ${lvl}`;
+    $("lvl").hidden = false;
+  }
+}
+
 async function main() {
   setupTelegram();
+  showLevel();
   try {
-    const res = await fetch("data.json?v=5");
+    const res = await fetch("data.json?v=6");
     data = await res.json();
   } catch (e) {
     note.textContent = "Не удалось загрузить колоду. Проверь интернет и открой стол заново.";

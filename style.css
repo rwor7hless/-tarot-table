@@ -15,7 +15,9 @@
   --moon: #E8E4F5;
   --muted: #968CBE;
   --accent: #9B7BFF;            /* persona colour, set from app.js; animates thanks to @property */
-  --foil: 50%;                  /* foil sheen position, set per card from the phone tilt */
+  --foil: 50%;
+  --back-bg: linear-gradient(160deg, var(--violet), var(--indigo) 60%, #120D2B);   /* backs.css overrides per skin */
+  --back-edge: var(--gold-deep);                  /* foil sheen position, set per card from the phone tilt */
   --serif: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
   --gutter: 16px;
   --vh: var(--tg-viewport-stable-height, 100dvh);
@@ -89,6 +91,16 @@ button, textarea { font: inherit; color: inherit; }
   text-wrap: balance;
 }
 .hint.fade { opacity: 0; }
+.lvl {
+  position: absolute; left: var(--gutter); top: 8px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  background: rgba(42, 31, 92, .55);
+  box-shadow: inset 0 0 0 1px rgba(216, 180, 90, .3);
+  color: var(--gold-light);
+  font-size: 15px; font-weight: 700;
+}
+.lvl[hidden] { display: none; }
 .sound {
   position: absolute; right: var(--gutter); top: 4px;
   width: 36px; height: 36px; padding: 7px;
@@ -191,8 +203,8 @@ button, textarea { font: inherit; color: inherit; }
   overflow: hidden;
 }
 .face.back {
-  background: var(--back-art) center / 88% auto no-repeat, linear-gradient(160deg, var(--violet), var(--indigo) 60%, #120D2B);
-  box-shadow: inset 0 0 0 1.5px var(--gold-deep), 0 6px 16px rgba(0, 0, 0, .5);
+  background: var(--back-art) center / 88% auto no-repeat, var(--back-bg);
+  box-shadow: inset 0 0 0 1.5px var(--back-edge), 0 6px 16px rgba(0, 0, 0, .5);
 }
 .face.back::after { /* a slow sheen over the gold ornament */
   content: ""; position: absolute; inset: 0;
