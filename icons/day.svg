@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="94">
+      <stop offset="0" stop-color="#F2D98A"/>
+      <stop offset="1" stop-color="#C9972F"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <rect x="24" y="12" width="52" height="76" rx="7" fill="url(#g)" stroke="url(#g)" stroke-width="12"/>
+    <rect x="24" y="12" width="52" height="76" rx="7" fill="#2A1F5C"/>
+  </g>
+  <g fill="url(#g)">
+    <circle cx="50" cy="50" r="10"/>
+  </g>
+  <g fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="66.0" y1="50.0" x2="71.0" y2="50.0"/>
+    <line x1="61.31370849898476" y1="61.31370849898476" x2="64.8492424049175" y2="64.8492424049175"/>
+    <line x1="50.0" y1="66.0" x2="50.0" y2="71.0"/>
+    <line x1="38.68629150101524" y1="61.31370849898476" x2="35.1507575950825" y2="64.8492424049175"/>
+    <line x1="34.0" y1="50.0" x2="29.0" y2="50.0"/>
+    <line x1="38.68629150101523" y1="38.68629150101524" x2="35.150757595082496" y2="35.1507575950825"/>
+    <line x1="50.0" y1="34.0" x2="49.99999999999999" y2="29.0"/>
+    <line x1="61.31370849898476" y1="38.68629150101523" x2="64.84924240491749" y2="35.150757595082496"/>
+  </g>
+</svg>
