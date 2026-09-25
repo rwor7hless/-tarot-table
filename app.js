@@ -7,7 +7,6 @@ const tg = window.Telegram?.WebApp;
 const inTelegram = Boolean(tg && tg.platform && tg.platform !== "unknown");
 const params = new URLSearchParams(location.search);
 const unlocked = (params.get("tier") || "free") !== "free"; // decoration only: the bot re-checks access
-const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const REVERSED_P = 0.35; // same as the bot's REVERSED_PROBABILITY default
 const FAN_SIZE = { day: 12, three: 13, five: 15, celtic: 18 };
@@ -55,11 +54,11 @@ function shuffled(items) {
 
 // ---------- Telegram glue ----------
 
-const haptic = {
-  tap: () => tg?.HapticFeedback?.impactOccurred("light"),
-  flip: () => tg?.HapticFeedback?.impactOccurred("medium"),
-  shuffle: () => tg?.HapticFeedback?.impactOccurred("heavy"),
-  done: () => tg?.HapticFeedback?.notificationOccurred("success"),
+const haptic = { // vibration is a nicety: never let it break a tap
+  tap: () => safely(() => tg?.HapticFeedback?.impactOccurred("light")),
+  flip: () => safely(() => tg?.HapticFeedback?.impactOccurred("medium")),
+  shuffle: () => safely(() => tg?.HapticFeedback?.impactOccurred("heavy")),
+  done: () => safely(() => tg?.HapticFeedback?.notificationOccurred("success")),
 };
 
 // One primary action per stage: Telegram's own main button inside Telegram, our button in a browser.
@@ -83,6 +82,20 @@ const primary = {
   },
   hide() { this.set("", null, { visible: false }); },
 };
+
+// A failing Telegram call must never stop the cards; the error is still shown for the bug report.
+function safely(fn) {
+  try { fn(); } catch (e) { report(e); }
+}
+
+function report(e) {
+  console.error(e);
+  const text = `Ошибка на столе: ${e?.message || e}. Пришли этот текст в чат с ботом, чтобы её исправили.`;
+  const n = document.getElementById("note");
+  if (n) { n.textContent = text; n.hidden = false; }
+}
+addEventListener("error", (e) => report(e.error || e.message));
+addEventListener("unhandledrejection", (e) => report(e.reason));
 
 function setupTelegram() {
   if (!inTelegram) return;
@@ -179,10 +192,10 @@ function describe(i) {
 
 function setStage(stage) {
   app.dataset.stage = stage;
-  if (inTelegram) {
+  if (inTelegram) safely(() => {
     if (stage === "setup") { tg.BackButton.hide(); tg.disableClosingConfirmation(); }
     else { tg.BackButton.show(); tg.enableClosingConfirmation(); }
-  }
+  });
 }
 
 function toSetup() {
@@ -201,13 +214,13 @@ function shuffle() {
   picked = [];
   setStage("shuffle");
   hint.textContent = "Тасую колоду…";
-  primary.hide();
-  haptic.shuffle();
   deckEl.classList.add("riffle");
+  safely(() => primary.hide());
+  haptic.shuffle();
   setTimeout(() => {
     deckEl.classList.remove("riffle");
     dealFan();
-  }, reducedMotion ? 50 : 1250);
+  }, 1250);
 }
 
 function dealFan() {
@@ -228,7 +241,7 @@ function dealFan() {
   });
   requestAnimationFrame(() => requestAnimationFrame(() => {
     fanCards.forEach((f, i) => {
-      f.el.style.transitionDelay = reducedMotion ? "0s" : `${i * 30}ms`;
+      f.el.style.transitionDelay = `${i * 30}ms`;
       f.el.style.opacity = "1";
     });
     layoutFan();
@@ -274,7 +287,7 @@ function pick(f) {
   placeCard(i);
   slotsEl.append(el);
 
-  if (!reducedMotion) { // fly from the fan to the position
+  { // fly from the fan to the position
     const to = el.getBoundingClientRect();
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
     const dy = from.top + from.height / 2 - (to.top + to.height / 2);
@@ -291,7 +304,7 @@ function pick(f) {
   slotEls.forEach((s) => s.box.classList.remove("next"));
   hint.textContent = "Все карты на столе";
   fanCards.forEach((x) => { x.el.style.opacity = "0"; x.el.style.pointerEvents = "none"; });
-  setTimeout(toReveal, reducedMotion ? 0 : 550);
+  setTimeout(toReveal, 550);
 }
 
 function toReveal() {
@@ -330,7 +343,7 @@ function openCard(i) {
 
 function openAll() {
   const closed = picked.map((p, i) => i).filter((i) => !picked[i].el.classList.contains("open"));
-  closed.forEach((i, k) => setTimeout(() => openCard(i), reducedMotion ? 0 : k * 220));
+  closed.forEach((i, k) => setTimeout(() => openCard(i), k * 220));
 }
 
 function renderDrawn() {

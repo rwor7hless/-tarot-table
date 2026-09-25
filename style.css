@@ -291,10 +291,9 @@ textarea:focus { box-shadow: inset 0 0 0 1.5px var(--gold); }
   cursor: pointer;
 }
 
+/* Shuffling, flying and turning cards answer the user's own taps, so they stay; only the ambient flicker goes. */
 @media (prefers-reduced-motion: reduce) {
-  .candle, .deck.riffle .card { animation: none !important; }
-  .card, .slot, .slot-label, .slot-num, .table { transition-duration: .01s !important; }
-  .card-inner { transition: transform .25s ease; }
+  .candle { animation: none; }
 }
 
 @media (min-width: 560px) {
